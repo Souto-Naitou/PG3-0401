@@ -28,6 +28,10 @@ private: /// メンバ変数
 
 
 private:
+    void UpdatePlayerBullets();
+
+
+private: /// 生成関数
     void CreateEnemy();
     void CreatePlayerBullet(const Vector2& _position);
 };

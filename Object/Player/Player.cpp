@@ -13,6 +13,10 @@ void Player::Initialize(Vector2 _position)
 
 void Player::Update()
 {
+    // 発射フラグの初期化
+    isShot_ = false;
+
+    // 入力情報の更新
     if (inputManager_->IsPressKey(DIK_W))
     {
         position_.y -= kMoveSpeed_;
@@ -28,6 +32,10 @@ void Player::Update()
     if (inputManager_->IsPressKey(DIK_D))
     {
         position_.x += kMoveSpeed_;
+    }
+    if (inputManager_->IsTriggerKey(DIK_SPACE))
+    {
+        isShot_ = true;
     }
 }
 

@@ -50,11 +50,9 @@ void StageScene::Update()
         enemy->Update();
     }
 
+
     /// プレイヤー弾の更新
-    for (auto bullet : playerBullets_)
-    {
-        bullet->Update();
-    }
+    this->UpdatePlayerBullets();
 }
 
 
@@ -93,6 +91,24 @@ void StageScene::Finalize()
     {
         delete enemy;
     }
+}
+
+void StageScene::UpdatePlayerBullets()
+{
+    /// プレイヤー弾の更新
+    for (auto bullet : playerBullets_)
+    {
+        bullet->Update();
+    }
+
+
+    /// 死亡フラグが立っているプレイヤー弾を削除
+    auto remFirst = std::remove_if(
+        playerBullets_.begin(),
+        playerBullets_.end(),
+        [](PlayerBullet* bullet) { return bullet->IsDead(); });
+
+    playerBullets_.erase(remFirst, playerBullets_.end());
 }
 
 void StageScene::CreateEnemy()

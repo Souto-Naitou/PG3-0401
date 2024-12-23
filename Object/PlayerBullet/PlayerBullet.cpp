@@ -10,6 +10,15 @@ void PlayerBullet::Initialize(const Vector2& _position)
 void PlayerBullet::Update()
 {
     position_ += speed_;
+
+    // 画面外に出たら死亡
+    if (position_.y < -radius_ ||
+        position_.y > 720 + radius_ ||
+        position_.x < -radius_ ||
+        position_.x > 1280 + radius_)
+    {
+        isDead_ = true;
+    }
 }
 
 void PlayerBullet::Draw() const
