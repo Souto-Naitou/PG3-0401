@@ -15,10 +15,13 @@ public: /// アクセサ
     void SetPosition(const Vector2& _position) { position_ = _position; }
     Vector2 GetPosition() const { return position_; }
     float GetRadius() const { return radius_; }
+    bool IsDead() const { return isDead_; }
+    void SetIsDead(bool _isDead) { isDead_ = _isDead; }
 
 
 private: /// メンバ変数
     Vector2 position_;
-    float speed_ = 3.0f;
+    float speed_ = 1.0f;
     float radius_ = 20.0f;
+    bool isDead_ = false;
 };

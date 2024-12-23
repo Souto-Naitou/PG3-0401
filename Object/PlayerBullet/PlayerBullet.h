@@ -17,6 +17,9 @@ public:
 
 public: /// アクセサ
     bool IsDead() const { return isDead_; }
+    Vector2 GetPosition() const { return position_; }
+    float GetRadius() const { return radius_; }
+    void SetIsDead(bool _isDead) { isDead_ = _isDead; }
 
 
 private:

@@ -9,18 +9,18 @@
 
 void StageScene::Initialize()
 {
+    // 乱数の初期化
     srand(static_cast<unsigned int>(time(nullptr)));
 
     // マネージャのインスタンス取得
     inputManager_ = InputManager::GetInstance();
 
     // プレイヤーのインスタンス生成
-    player_ = new Player();
+    player_ = std::make_unique<Player>();
     player_->Initialize(Vector2(640.0f, 640.0f));
 
     // メモリを確保
     enemies_.reserve(kEnemyCount_);
-    playerBullets_.reserve(10);
 
 
     // 敵のインスタンス生成
@@ -45,14 +45,31 @@ void StageScene::Update()
 
 
     /// 敵の更新
-    for (auto enemy : enemies_)
+    for (auto& enemy : enemies_)
     {
         enemy->Update();
     }
 
 
     /// プレイヤー弾の更新
-    this->UpdatePlayerBullets();
+    for (auto& bullet : playerBullets_)
+    {
+        bullet->Update();
+    }
+
+
+    // 当たり判定の更新
+    this->UpdateCollision();
+
+    
+    // 消去フラグが立っているオブジェクトの削除
+    this->RemovePlayerBullets();
+    this->RemoveEnemies();
+
+    if (enemies_.size() == 0)
+    {
+        SceneManager::GetInstance()->ChangeScene("GameClearScene");
+    }
 }
 
 
@@ -64,17 +81,17 @@ void StageScene::Draw()
     // 現在のシーン名を表示
     Novice::ScreenPrintf(10, 10, "[StageScene]");
 
-    // プレイヤーの描画
+    /// プレイヤーの描画
     player_->Draw();
 
-    // 敵の描画
-    for (auto enemy : enemies_)
+    /// 敵の描画
+    for (auto& enemy : enemies_)
     {
         enemy->Draw();
     }
 
-    // プレイヤー弾の描画
-    for (auto bullet : playerBullets_)
+    /// プレイヤー弾の描画
+    for (auto& bullet : playerBullets_)
     {
         bullet->Draw();
     }
@@ -83,47 +100,85 @@ void StageScene::Draw()
 
 void StageScene::Finalize()
 {
-    // プレイヤーのインスタンス破棄
-    delete player_;
+    // プレイヤーの終了処理
+    player_->Finalize();
 
-    // 敵のインスタンス破棄
-    for (auto enemy : enemies_)
+
+    /// 敵の終了処理
+    for (auto& enemy : enemies_)
     {
-        delete enemy;
+        enemy->Finalize();
+    }
+
+
+    /// プレイヤー弾の終了処理
+    for (auto& bullet : playerBullets_)
+    {
+        bullet->Finalize();
     }
 }
 
-void StageScene::UpdatePlayerBullets()
+
+void StageScene::UpdateCollision()
 {
-    /// プレイヤー弾の更新
-    for (auto bullet : playerBullets_)
+    /// プレイヤー弾と敵の当たり判定
+    for (auto& bullet : playerBullets_)
     {
-        bullet->Update();
+        for (auto& enemy : enemies_)
+        {
+            // プレイヤー弾と敵の距離
+            Vector2 distance = enemy->GetPosition() - bullet->GetPosition();
+
+            // プレイヤー弾と敵の半径の和
+            float sumRadius = enemy->GetRadius() + bullet->GetRadius();
+
+            /// 当たり判定
+            if (distance.Length() < sumRadius)
+            {
+                // プレイヤー弾の死亡フラグをtrueにする
+                bullet->SetIsDead(true);
+
+                // 敵の死亡フラグをtrueにする
+                enemy->SetIsDead(true);
+            }
+        }
     }
+}
 
 
+void StageScene::RemovePlayerBullets()
+{
+    /// 死亡フラグが立っているプレイヤー弾を削除
+    playerBullets_.remove_if([](const std::unique_ptr<PlayerBullet>& bullet) { return bullet->IsDead(); });
+}
+
+
+void StageScene::RemoveEnemies()
+{
     /// 死亡フラグが立っているプレイヤー弾を削除
     auto remFirst = std::remove_if(
-        playerBullets_.begin(),
-        playerBullets_.end(),
-        [](PlayerBullet* bullet) { return bullet->IsDead(); });
+        enemies_.begin(),
+        enemies_.end(),
+        [](const std::unique_ptr<Enemy>& enm) { return enm->IsDead(); });
 
-    playerBullets_.erase(remFirst, playerBullets_.end());
+    // 配列から削除
+    enemies_.erase(remFirst, enemies_.end());
 }
+
 
 void StageScene::CreateEnemy()
 {
     // インスタンスを生成
-    Enemy* enemy = new Enemy();
+    auto enemy = std::make_unique<Enemy>();
 
     // 敵の半径
     float radius = enemy->GetRadius();
 
-    // 敵の出現範囲([radius, 1280 - radius], [radius, 360 - radius])
+    /// 敵の出現範囲([radius, 1280 - radius], [radius, 360 - radius])
     int rangeW = 1280 - static_cast<int>(radius * 2);
     int rangeH = 360 - static_cast<int>(radius * 2);
 
-    // 位置をランダムに決定
+    /// 位置をランダムに決定
     float x = static_cast<float>(rand() % rangeW + radius);
     float y = static_cast<float>(rand() % rangeH + radius);
 
@@ -131,17 +186,18 @@ void StageScene::CreateEnemy()
     enemy->Initialize(Vector2(x, y));
 
     // リストに追加
-    enemies_.push_back(enemy);
+    enemies_.emplace_back(std::move(enemy));
 }
+
 
 void StageScene::CreatePlayerBullet(const Vector2& _position)
 {
     // インスタンスを生成
-    PlayerBullet* bullet = new PlayerBullet();
+    auto bullet = std::make_unique<PlayerBullet>();
 
     // 初期化
     bullet->Initialize(_position);
 
     // リストに追加
-    playerBullets_.push_back(bullet);
+    playerBullets_.emplace_back(std::move(bullet));
 }
